@@ -1,5 +1,5 @@
 defmodule Bucket.Access do
-  use GenServer
+  use GenServer, restart: :temporary
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, :ok, opts)
   def init(:ok), do: {:ok, %{}}
@@ -45,10 +45,8 @@ defmodule Bucket.Access do
   end
 
   def handle_call(:terminate, _from, state) do
-    {:reply, state, state, {:continue, :finish_process}}
+    {:stop, :normal, {:ok, state}, state}
   end
-
-  def handle_continue(:finish_process, state), do: {:stop, :normal, state}
 
   defp reduce(state, _key, current, count) when current - count < 0 do
     {:reply, {:error, "you don't have enough items in this bucket"}, state}
