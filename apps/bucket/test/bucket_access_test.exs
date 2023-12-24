@@ -44,4 +44,14 @@ defmodule Bucket.Test.BucketAccessTest do
     Bucket.Access.reduce_count(bucket, "milk", 1)
     assert Bucket.Access.get(bucket, "milk") == {:error, "bucket empty"}
   end
+
+  test "try to overwrite a value", %{bucket: bucket} do
+    assert Bucket.Access.get(bucket, "milk") == {:error, "bucket empty"}
+    Bucket.Access.put(bucket, "milk", 3)
+    assert Bucket.Access.set_new_value(bucket, "butter", 2) == {:error, "key not found"}
+    assert Bucket.Access.set_new_value(bucket, "milk", "5") == {:error, "value not an integer"}
+    assert Bucket.Access.set_new_value(bucket, "milk", -5) == {:error, "value must be positive"}
+    assert Bucket.Access.set_new_value(bucket, "milk", 5) == :ok
+    assert Bucket.Access.get(bucket, "milk") == {:ok, 5}
+  end
 end

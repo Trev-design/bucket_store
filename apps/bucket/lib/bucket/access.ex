@@ -78,6 +78,34 @@ defmodule Bucket.Access do
   """
   def put(bucket, key, value), do: GenServer.call(bucket, {:set, key, value})
 
+  @spec set_new_value(bucket :: pid(), key :: binary(), new_value :: non_neg_integer()) ::
+    :ok, {:error, reason :: binary()}
+  @doc """
+  Overwrites the value of an entry and returns an ok tuple if succeed, if not it will return an error.
+  The key must be existent and the value must be an unsigned inetger greater zero.
+
+  ## Examples:
+      iex> {:ok, bucket} = Bucket.Access.start_link([])
+      {:ok, bucket}
+      iex> Bucket.Access.put(bucket, "valid_key", 42)
+      :ok
+      iex> Bucket.Access.get(bucket, "valid_key")
+      {:ok, 42}
+
+      iex> Bucket.Access.set_new_value(bucket, "butter", 2)
+      {:error, "key not found"}
+      iex> Bucket.Access.set_new_value(bucket, "valid_key", "5")
+      {:error, "value not an integer"}
+      iex> Bucket.Access.set_new_value(bucket, "valid_key", -5)
+      {:error, "value must be positive"}
+      iex> Bucket.Access.set_new_value(bucket, "valid_key", 5)
+      :ok
+
+      iex> Bucket.Access.get(bucket, "valid_key")
+      {:ok, 5}
+  """
+  def set_new_value(bucket, key, new_value), do: GenServer.call(bucket, {:new_value, key, new_value})
+
   @spec delete_items(bucket :: pid(), key :: binary()) :: :ok
   @doc """
   Returns just an ok atom.
@@ -160,14 +188,29 @@ defmodule Bucket.Access do
 
   @impl GenServer
   def handle_call({:set, key, value}, _from, state) when is_integer(value) do
-    case Map.fetch(state, key) do
-      {:ok, current} -> {:reply, :ok, Map.put(state, key, current + value)}
-      :error         -> {:reply, :ok, Map.put(state, key,value)}
+    if value > 0 do
+      put_value_in(state, key, value)
+    else
+      {:reply, {:error, "value must be positive"}, state}
     end
   end
 
   @impl GenServer
   def handle_call({:set, _key, _value}, _from, state) do
+    {:reply, {:error, "value not an integer"}, state}
+  end
+
+  @impl GenServer
+  def handle_call({:new_value, key, new_value}, _from, state) when is_integer(new_value) do
+    if new_value > 0 do
+      try_set_new_value(state, key, new_value)
+    else
+      {:reply, {:error, "value must be positive"}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:new_value, _key, _new_value}, _from, state) do
     {:reply, {:error, "value not an integer"}, state}
   end
 
@@ -190,6 +233,20 @@ defmodule Bucket.Access do
   @impl GenServer
   def handle_call(:terminate, _from, state) do
     {:stop, :normal, {:ok, state}, state}
+  end
+
+  defp put_value_in(state, key, value) do
+    case Map.fetch(state, key) do
+      {:ok, current} -> {:reply, :ok, Map.put(state, key, current + value)}
+      :error         -> {:reply, :ok, Map.put(state, key,value)}
+    end
+  end
+
+  defp try_set_new_value(state, key, new_value) do
+    case Map.fetch(state, key) do
+      {:ok, _value} -> {:reply, :ok, Map.put(state, key, new_value)}
+      :error        -> {:reply, {:error, "key not found"}, state}
+    end
   end
 
   defp reduce(state, _key, _current, count) when count < 0 do
