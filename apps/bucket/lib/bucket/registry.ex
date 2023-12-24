@@ -13,9 +13,30 @@ defmodule Bucket.Registry do
   @spec lookup(name :: binary()) ::
     {:ok, bucket :: pid()} |
     {:error, reason :: binary()}
+  @doc """
+  returns a tuple of an ok atom and the id of a bucket when succeed, else a tuple with an error atom and the reason
+
+  ## Examples:
+      iex> Bucket.Registry.lookup("existing_name")
+      {:ok, #PID<...>}
+
+      iex> Bucket.Registry.lookup("invalid_name")
+      {:error, "no bucket registered with this name"}
+  """
   def lookup(name), do: GenServer.call(__MODULE__, {:lookup, name})
 
   @spec create(name :: binary()) :: :ok
+  @doc """
+  registered a new bucket.
+  Returns always an ok atom without paying attention to whether the key exists or not but doesn't insert already existing buckets new.
+
+  ## Examples:
+      iex> Bucket.Registry.create("new_name")
+      :ok
+
+      iex> Bucket.Registry.create("existing_name")
+      :ok # but not registered the already existing name new
+  """
   def create(name), do: GenServer.cast(__MODULE__, {:create, name})
 
   @impl GenServer
