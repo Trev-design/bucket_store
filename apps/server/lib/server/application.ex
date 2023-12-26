@@ -8,8 +8,8 @@ defmodule Server.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Server.Worker.start_link(arg)
-      # {Server.Worker, arg}
+      Supervisor.child_spec({Task, fn -> Server.Socket.accept(4040) end}, restart: :permanent),
+      {Task.Supervisor, name: BucketServer.TaskSupervisor}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
