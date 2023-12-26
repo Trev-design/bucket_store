@@ -7,7 +7,7 @@ defmodule Bucket.Test.BucketAccessTest do
   end
 
   test "try to put more data in", %{bucket: bucket} do
-    assert Bucket.Access.put(bucket, "milk", "2") == {:error, "value not an integer"}
+    assert Bucket.Access.put(bucket, "milk", "2a") == {:error, "value not an integer"}
     assert Bucket.Access.put(bucket, "milk", 2) == :ok
   end
 
@@ -37,7 +37,7 @@ defmodule Bucket.Test.BucketAccessTest do
     assert Bucket.Access.get(bucket, "milk") == {:ok, 3}
     assert Bucket.Access.reduce_count(bucket, "milk", -2) == {:error, "count value must be positive"}
     assert Bucket.Access.reduce_count(bucket, "butter", 5) == {:error, "no item with this name in this bucket"}
-    assert Bucket.Access.reduce_count(bucket, "milk", "4") == {:error, "count not an integer"}
+    assert Bucket.Access.reduce_count(bucket, "milk", "4a") == {:error, "value not an integer"}
     assert Bucket.Access.reduce_count(bucket, "milk", 4) == {:error, "you don't have enough items in this bucket"}
     Bucket.Access.reduce_count(bucket, "milk", 2)
     assert Bucket.Access.get(bucket, "milk") == {:ok, 1}
@@ -49,8 +49,8 @@ defmodule Bucket.Test.BucketAccessTest do
     assert Bucket.Access.get(bucket, "milk") == {:error, "bucket empty"}
     Bucket.Access.put(bucket, "milk", 3)
     assert Bucket.Access.set_new_value(bucket, "butter", 2) == {:error, "key not found"}
-    assert Bucket.Access.set_new_value(bucket, "milk", "5") == {:error, "value not an integer"}
-    assert Bucket.Access.set_new_value(bucket, "milk", -5) == {:error, "value must be positive"}
+    assert Bucket.Access.set_new_value(bucket, "milk", "5b") == {:error, "value not an integer"}
+    assert Bucket.Access.set_new_value(bucket, "milk", -5) == {:error, "value must be positive and greater zero"}
     assert Bucket.Access.set_new_value(bucket, "milk", 5) == :ok
     assert Bucket.Access.get(bucket, "milk") == {:ok, 5}
   end

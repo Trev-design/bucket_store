@@ -21,7 +21,13 @@ defmodule Server.Socket do
   end
 
   defp message(socket) do
-     :gen_tcp.recv(socket, 0)
+    with {:ok, data}    <- :gen_tcp.recv(socket, 0),
+          {:ok, command} <- Server.Command.parse(data)
+    do
+      Server.Command.run_command(command)
+    else
+      err -> err
+    end
   end
 
   defp write_line({:ok, message}, socket), do: :gen_tcp.send(socket, "OK #{message}")

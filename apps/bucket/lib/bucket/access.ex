@@ -181,37 +181,32 @@ defmodule Bucket.Access do
   def handle_call({:get, _key}, _from, state), do: {:reply, {:error, "bucket empty"}, state}
 
   @impl GenServer
-  def handle_call(:show, _from, state)when map_size(state) > 0, do: {:reply, {:ok, state}, state}
+  def handle_call(:show, _from, state) when map_size(state) > 0, do: {:reply, {:ok, state}, state}
 
   @impl GenServer
   def handle_call(:show, _from, state), do: {:reply, {:error, "bucket empty"}, state}
 
-  @impl GenServer
   def handle_call({:set, key, value}, _from, state) when is_integer(value) do
-    if value > 0 do
-      put_value_in(state, key, value)
-    else
-      {:reply, {:error, "value must be positive"}, state}
-    end
+    new_value(state, key, value)
   end
 
   @impl GenServer
-  def handle_call({:set, _key, _value}, _from, state) do
-    {:reply, {:error, "value not an integer"}, state}
+  def handle_call({:set, key, value}, _from, state) do
+    check_and_compute(state, value, fn bucket, count ->
+      new_value(bucket, key, count)
+    end)
   end
 
   @impl GenServer
   def handle_call({:new_value, key, new_value}, _from, state) when is_integer(new_value) do
-    if new_value > 0 do
-      try_set_new_value(state, key, new_value)
-    else
-      {:reply, {:error, "value must be positive"}, state}
-    end
+    value_to_change(state, key, new_value)
   end
 
   @impl GenServer
-  def handle_call({:new_value, _key, _new_value}, _from, state) do
-    {:reply, {:error, "value not an integer"}, state}
+  def handle_call({:new_value, key, new_value}, _from, state) do
+    check_and_compute(state, new_value, fn bucket, count ->
+      value_to_change(bucket, key, count)
+    end)
   end
 
   @impl GenServer
@@ -219,20 +214,49 @@ defmodule Bucket.Access do
 
   @impl GenServer
   def handle_call({:reduce, key, count}, _from, state) when is_integer(count) do
+    compute_reduction(state, key, count)
+  end
+
+  @impl GenServer
+  def handle_call({:reduce, key, value}, _from, state) do
+    check_and_compute(state, value, fn bucket, count ->
+      compute_reduction(bucket, key, count)
+    end)
+  end
+
+  @impl GenServer
+  def handle_call(:terminate, _from, state) do
+    {:stop, :normal, {:ok, state}, state}
+  end
+
+  defp check_and_compute(state, value, callback) do
+    case Integer.parse(value, 10) do
+      {count, ""} -> callback.(state, count)
+      _invalid    -> {:reply, {:error, "value not an integer"}, state}
+    end
+  end
+
+  defp compute_reduction(state, key, count) do
     case Map.fetch(state, key) do
       {:ok, current} -> reduce(state, key, current, count)
       :error         -> {:reply, {:error, "no item with this name in this bucket"}, state}
     end
   end
 
-  @impl GenServer
-  def handle_call({:reduce, _key, _count}, _from, state) do
-    {:reply, {:error, "count not an integer"}, state}
+  defp value_to_change(state, key, new_value) do
+    if new_value > 0 do
+      try_set_new_value(state, key, new_value)
+    else
+      {:reply, {:error, "value must be positive and greater zero"}, state}
+    end
   end
 
-  @impl GenServer
-  def handle_call(:terminate, _from, state) do
-    {:stop, :normal, {:ok, state}, state}
+  defp new_value(state, key, value) do
+    if value > 0 do
+      put_value_in(state, key, value)
+    else
+      {:reply, {:error, "value must be positive"}, state}
+    end
   end
 
   defp put_value_in(state, key, value) do
