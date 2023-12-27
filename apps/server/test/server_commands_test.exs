@@ -2,7 +2,7 @@ defmodule ServerCommandsTest do
   use ExUnit.Case, async: true
 
   test "create bucket" do
-    {:ok, {:create, bucket} = command} = Server.Command.parse("CREATE bummel")
+    {:ok, {:create, _bucket} = command} = Server.Command.parse("CREATE bummel")
     assert {:ok, "created bucket"} = Server.Command.run_command(command)
   end
 
