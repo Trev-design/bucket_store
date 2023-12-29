@@ -18,11 +18,13 @@ defmodule Server.Socket do
     socket
     |> message()
     |> write_line(socket)
+
+    serve(socket)
   end
 
   defp message(socket) do
     with {:ok, data}    <- :gen_tcp.recv(socket, 0),
-          {:ok, command} <- Server.Command.parse(data)
+         {:ok, command} <- Server.Command.parse(data)
     do
       Server.Command.run_command(command)
     else
