@@ -1,11 +1,13 @@
 defmodule Client.Socket do
   use GenServer
 
-  def start_link(opts), do: GenServer.start_link(__MODULE__, :ok, opts)
-  def init(_init_arg) do
-    {:ok, socket} = :gen_tcp.connect({0,0,0,0}, 4040, [:binary, active: false, packet: :line])
+  require Logger
 
-    {:ok, socket}
+  def start_link([name: name, port: port]) do
+    GenServer.start_link(__MODULE__, port, name: name)
+  end
+  def init(port) do
+    :gen_tcp.connect({127, 0, 0, 1}, port, [:binary, active: false])
   end
 
   def create_bucket(bucket_name), do: GenServer.call(__MODULE__, {:create_bucket, bucket_name})
@@ -16,32 +18,33 @@ defmodule Client.Socket do
   def delete_item(bucket_name, key), do: GenServer.call(__MODULE__, {:delete_item, bucket_name, key})
 
   def handle_call({:create_bucket, bucket_name}, _from, socket) do
-    compute_packet(socket, "CREATE #{bucket_name}")
+    compute_packet(socket, <<"CREATE #{bucket_name}">>)
   end
 
   def handle_call({:get_bucket, bucket_name}, _from, socket) do
-    compute_packet(socket, "SHOW #{bucket_name}")
+    compute_packet(socket, <<"SHOW #{bucket_name}">>)
   end
 
   def handle_call({:get_item, bucket_name, key}, _from, socket) do
-    compute_packet(socket, "GET #{bucket_name} #{key}")
+    compute_packet(socket, <<"GET #{bucket_name} #{key}">>)
   end
 
   def handle_call({:put_in, bucket_name, key, value}, _from, socket) do
-    compute_packet(socket, "PUT #{bucket_name} #{key} #{value}")
+    compute_packet(socket, <<"PUT #{bucket_name} #{key} #{value}">>)
   end
 
   def handle_call({:reduce_count, bucket_name, key, value}, _from, socket) do
-    compute_packet(socket, "REDUCE #{bucket_name} #{key} #{value}")
+    compute_packet(socket, <<"REDUCE #{bucket_name} #{key} #{value}">>)
   end
 
   def handle_call({:delete_item, bucket_name, key}, _from, socket) do
-    compute_packet(socket, "DELETE #{bucket_name} #{key}")
+    compute_packet(socket, <<"DELETE #{bucket_name} #{key}">>)
   end
 
   defp compute_packet(socket, packet) do
     case :gen_tcp.send(socket, packet) do
-      :ok -> {:reply, :gen_tcp.recv(socket, 0), socket}
+      :ok ->
+        {:reply, :gen_tcp.recv(socket, 0), socket}
       invalid -> {:reply, invalid, socket}
     end
   end

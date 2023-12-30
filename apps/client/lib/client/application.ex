@@ -8,8 +8,7 @@ defmodule Client.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Client.Worker.start_link(arg)
-      # {Client.Worker, arg}
+      {Client.Socket, name: Client.Socket, port: 4040}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

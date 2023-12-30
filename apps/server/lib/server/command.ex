@@ -62,7 +62,7 @@ defmodule Server.Command do
           | {:get, binary(), any()}
           | {:put, binary(), any(), any()}
           | {:reduce, binary(), any(), any()}
-        ) :: :ok | {:error, binary()} | {:ok, binary() | non_neg_integer() | map()}
+        ) :: {:error, binary()} | {:ok, any()}
   @doc """
   Tries to run a command.
   Check out the Bucket.Access functions and the parse command to guarantee success.
@@ -74,7 +74,10 @@ defmodule Server.Command do
 
   def run_command({:show, bucket}) do
     lookup(bucket, fn pid ->
-      Bucket.Access.show_bucket(pid)
+      case Bucket.Access.show_bucket(pid) do
+        {:ok, content}    -> Jason.encode(content)
+        {:error, reason}  -> {:error, reason}
+      end
     end)
   end
 
@@ -87,18 +90,23 @@ defmodule Server.Command do
   def run_command({:put, bucket, key, value}) do
     lookup(bucket, fn pid ->
       Bucket.Access.put(pid, key, value)
+      {:ok, "put new value in bucket"}
     end)
   end
 
   def run_command({:reduce, bucket, key, count}) do
     lookup(bucket, fn pid ->
-      Bucket.Access.reduce_count(pid, key, count)
+      case Bucket.Access.reduce_count(pid, key, count) do
+        :ok -> {:ok, "reduced value"}
+        err -> err
+      end
     end)
   end
 
   def run_command({:delete, bucket, key}) do
     lookup(bucket, fn pid ->
       Bucket.Access.delete_items(pid, key)
+      {:ok, "deleted value"}
     end)
   end
 

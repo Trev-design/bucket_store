@@ -32,7 +32,7 @@ defmodule Bucket.Access do
   """
   def get(bucket, key), do: GenServer.call(bucket, {:get, key})
 
-  @spec show_bucket(bucket :: pid()) :: items :: map()
+  @spec show_bucket(bucket :: pid()) :: {:error, reason :: binary()}|{:ok, items :: map()}
   @doc """
   Returns the whole bucket if there is any item in it, else it returns an error
 

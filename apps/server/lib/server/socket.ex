@@ -2,7 +2,7 @@ defmodule Server.Socket do
   require Logger
 
   def accept(port) do
-    {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: :line, active: false, reuseaddr: true])
+    {:ok, socket} = :gen_tcp.listen(port, [:binary, active: false, reuseaddr: true])
     Logger.info("Accepting connections on port #{port}")
     loop_acceptor(socket)
   end
@@ -23,7 +23,7 @@ defmodule Server.Socket do
   end
 
   defp message(socket) do
-    with {:ok, data}    <- :gen_tcp.recv(socket, 0),
+    with {:ok, data}    <- receive_msg(socket),
          {:ok, command} <- Server.Command.parse(data)
     do
       Server.Command.run_command(command)
@@ -31,6 +31,8 @@ defmodule Server.Socket do
       err -> err
     end
   end
+
+  defp receive_msg(socket), do: :gen_tcp.recv(socket, 0)
 
   defp write_line({:ok, message}, socket), do: :gen_tcp.send(socket, "OK #{message}")
   defp write_line({:error, message}, socket), do: :gen_tcp.send(socket, "ERROR #{message}")
