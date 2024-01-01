@@ -12,35 +12,38 @@ defmodule Client.Socket do
 
   @spec create_bucket(bucket_name :: binary()) :: {:ok, msg :: binary()} | {:error, msg :: binary()}
   @doc """
-
+  send a command to the server to create a bucket
   """
   def create_bucket(bucket_name), do: GenServer.call(__MODULE__, {:create_bucket, bucket_name})
 
   @spec get_bucket(bucket :: binary()) :: {:ok, msg :: binary()} | {:error, msg :: binary()}
   @doc """
-
+  send a command to the sever to get the whole bucket
   """
   def get_bucket(bucket_name), do: GenServer.call(__MODULE__, {:get_bucket, bucket_name})
 
   @spec get_item(bucket_name :: binary(), key :: binary()) :: {:ok, msg :: binary()} | {:error, msg :: binary()}
   @doc """
-
+  send a command to the server to get a specific item of the bucket
   """
   def get_item(bucket_name, key), do: GenServer.call(__MODULE__, {:get_item, bucket_name, key})
 
   @spec put_in(bucket_name :: binary(), key :: binary(), value :: non_neg_integer()) :: {:ok, msg :: binary()} | {:error, msg :: binary()}
   @doc """
-
+  send a command to the server to set a new item count or adds new items to a existing count
   """
   def put_in(bucket_name, key, value), do: GenServer.call(__MODULE__, {:put_in, bucket_name, key, value})
 
   @spec reduce_item_count(bucket_name :: binary(), key :: binary(), count_down :: non_neg_integer()) :: {:ok, msg :: binary()} | {:error, msg :: binary()}
   @doc """
-
+  send a command to the server to reduce the count of a specific item
   """
   def reduce_item_count(bucket_name, key, items_down), do: GenServer.call(__MODULE__, {:reduce_count, bucket_name, key, items_down})
 
   @spec delete_item(bucket_name :: binary(), key :: binary()) :: {:ok, msg :: binary()} | {:error, msg :: binary()}
+  @doc """
+  send a command to the server to delete an complete item count
+  """
   def delete_item(bucket_name, key), do: GenServer.call(__MODULE__, {:delete_item, bucket_name, key})
 
   @impl GenServer
